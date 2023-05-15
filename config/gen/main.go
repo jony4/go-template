@@ -11,41 +11,27 @@ import (
 )
 
 func main() {
-	pwd, _ := os.Getwd()
-	serviceName := ""
-	if serviceName == "" {
-		panic("serviceName is empty")
-	}
+	var (
+		pwd, _      = os.Getwd()
+		dirName     = "/data/apps"
+		serviceName = "go-template"
+	)
+
+	// 生产，默认配置
 	cfg := &config.Config{
 		ServiceName:    serviceName,
 		Debug:          false,
 		LogLevel:       "warn",
 		DefaultTimeout: 1 * time.Second,
-		Migration: &config.Migration{
-			Driver: "sqlite3",
-			Name:   "migration",
-			Path:   fmt.Sprintf("/data/apps/%s/migrations/sqlite3", serviceName),
-		},
 		DB: &config.DB{
 			Driver: "sqlite3",
-			DSN:    fmt.Sprintf("/data/apps/%s/%s.db?_journal_mode=WAL", serviceName, serviceName),
+			DSN:    fmt.Sprintf("%s/%s/%s.db?_journal_mode=WAL", dirName, serviceName, serviceName),
 		},
-		Redis: &config.Redis{
-			RedisMode: "redis-server",
-			RedisServer: config.RedisServer{
-				Address:  "127.0.0.1:6379",
-				Password: "",
-			},
-			RedisSentinel: config.RedisSentinel{
-				Address: []string{
-					"127.0.0.1:26379",
-				},
-				Password:   "",
-				MasterName: "master",
-			},
+		Redis: &config.RedisServer{
+			Address:  "127.0.0.1:6379",
+			Password: "",
 		},
 	}
-	// 生产，默认配置
 	cfgBytes, err := json.Marshal(cfg)
 	if err != nil {
 		panic(err)
@@ -54,36 +40,22 @@ func main() {
 	json.Indent(&out, cfgBytes, "", "\t")
 	os.WriteFile(pwd+"/config/config.json", out.Bytes(), 0755)
 
+	serviceName += "-dev"
+	// 开发，测试配置
 	cfgDev := &config.Config{
 		ServiceName:    serviceName,
-		Debug:          false,
-		LogLevel:       "warn",
+		Debug:          true,
+		LogLevel:       "debug",
 		DefaultTimeout: 1 * time.Second,
-		Migration: &config.Migration{
-			Driver: "sqlite3",
-			Name:   "migration",
-			Path:   fmt.Sprintf("/data/apps/%s/migrations/sqlite3", serviceName),
-		},
 		DB: &config.DB{
 			Driver: "sqlite3",
-			DSN:    fmt.Sprintf("/data/apps/%s/%s.db?_journal_mode=WAL", serviceName, serviceName),
+			DSN:    pwd + fmt.Sprintf("/%s.db?_journal_mode=WAL", serviceName),
 		},
-		Redis: &config.Redis{
-			RedisMode: "redis-server",
-			RedisServer: config.RedisServer{
-				Address:  "127.0.0.1:6379",
-				Password: "",
-			},
-			RedisSentinel: config.RedisSentinel{
-				Address: []string{
-					"127.0.0.1:26379",
-				},
-				Password:   "",
-				MasterName: "master",
-			},
+		Redis: &config.RedisServer{
+			Address:  "127.0.0.1:6379",
+			Password: "",
 		},
 	}
-	// 开发，测试配置
 	cfgDevBytes, err := json.Marshal(cfgDev)
 	if err != nil {
 		panic(err)

@@ -3,7 +3,7 @@
 PROJECT_GO = $(shell go list -m)
 PROJECT_NAME = my_project_name
 PRODUCT_NAME = NQ
-VERSION = 1.0.0
+VERSION = 0.0.1
 
 # git 仓库基本信息
 BRANCH_NAME = $(shell git rev-parse --abbrev-ref HEAD)
@@ -12,11 +12,14 @@ COMMIT_ID = $(shell git rev-parse --short=8 HEAD)
 CHANNEL := $(subst /,-,$(or $(CI_COMMIT_REF_NAME), $(BRANCH_NAME)))
 
 #golang 基本信息
-LDFLAGS += -X "$(PROJECT_GO)/version.BuildTS=$(BUILD_TS)"
-LDFLAGS += -X "$(PROJECT_GO)/version.GitHash=$(COMMIT_ID)"
-LDFLAGS += -X "$(PROJECT_GO)/version.Version=$(VERSION)"
-LDFLAGS += -X "$(PROJECT_GO)/version.GitBranch=$(CHANNEL)"
-CGO_ENABLED=1
+LDFLAGS += -s -w
+LDFLAGS += -X "$(PROJECT_GO)/components/version.BuildTS=$(BUILD_TS)"
+LDFLAGS += -X "$(PROJECT_GO)/components/version.GitHash=$(COMMIT_ID)"
+LDFLAGS += -X "$(PROJECT_GO)/components/version.Version=$(VERSION)"
+LDFLAGS += -X "$(PROJECT_GO)/components/version.GitBranch=$(CHANNEL)"
+LDFLAGS += -linkmode external -extldflags -static
+
+GCFLAGS = -c 4 -N -l
 ########### 通用环境变量 end #############
 
 ########### 必备命令 begin #############
@@ -35,9 +38,13 @@ test: clean
 	go test -tags skip -v ./... -coverprofile .coverage.txt
 	go tool cover -func=.coverage.txt
 
+build: LDFLAGS = -s -w
+build: LDFLAGS += -X "$(PROJECT_GO)/components/version.BuildTS=$(BUILD_TS)"
+build: LDFLAGS += -X "$(PROJECT_GO)/components/version.GitHash=$(COMMIT_ID)"
+build: LDFLAGS += -X "$(PROJECT_GO)/components/version.Version=$(VERSION)"
+build: LDFLAGS += -X "$(PROJECT_GO)/components/version.GitBranch=$(CHANNEL)"
 build: clean
-	cd cmd/$(PROJECT_NAME) && \
-	go build -ldflags '$(LDFLAGS)' -trimpath -o $(PROJECT_NAME)
+	go build -gcflags '$(GCFLAGS)' -ldflags '$(LDFLAGS)' -tags "libsqlite3 darwin amd64" -o $(PROJECT_NAME)
 
 clean:
 	-rm -fr $(PROJECT_NAME)*
@@ -51,11 +58,25 @@ GOPATH:=$(shell go env GOPATH)
 dev=root@175.24.233.40
 
 online:
-	@rsync -e 'ssh -p 22' -c config/config.json $(dev):/data/apps/$(PROJECT_NAME)/$(PROJECT_NAME).json
-	scp -r storage/migrations $(dev):/data/apps/$(PROJECT_NAME)/migrations
-	env GOOS=linux go build -v -gcflags "-N -l" -ldflags '$(LDFLAGS)' -ldflags "-s -w" -o $(PROJECT_NAME) && upx -1 $(PROJECT_NAME)
+	scp -r config/config.json $(dev):/data/apps/$(PROJECT_NAME)/config/config.json
+	env CC=x86_64-linux-musl-gcc GOOS=linux CGO_ENABLED=1 go build -gcflags '$(GCFLAGS)' -ldflags '$(LDFLAGS)' -o $(PROJECT_NAME) && upx -1 $(PROJECT_NAME)
 	ssh $(dev) -p 22 "mv /data/apps/$(PROJECT_NAME)/$(PROJECT_NAME) /data/apps/$(PROJECT_NAME)/$(PROJECT_NAME)-old"
-	@rsync -e 'ssh -p 22' -c $(PROJECT_NAME) $(dev):/data/apps/$(PROJECT_NAME)/$(PROJECT_NAME)
+	scp -r $(PROJECT_NAME) $(dev):/data/apps/$(PROJECT_NAME)/$(PROJECT_NAME)
 	ssh $(dev) -p 22 "supervisorctl restart $(PROJECT_NAME)"
-########## 部署到机器上 ##############
 
+online_config_only:
+	scp -r config/config.json $(dev):/data/apps/$(PROJECT_NAME)/config/config.json
+	ssh $(dev) -p 22 "supervisorctl restart $(PROJECT_NAME)"
+
+dev: PROJECT_NAME=dev
+dev:
+	scp -r config/config_dev.json $(dev):/data/apps/$(PROJECT_NAME)/config/config.json
+	env CC=x86_64-linux-musl-gcc GOOS=linux CGO_ENABLED=1 go build -gcflags '$(GCFLAGS)' -ldflags '$(LDFLAGS)' -o $(PROJECT_NAME) && upx -1 $(PROJECT_NAME)
+	ssh $(dev) -p 22 "mv /data/apps/$(PROJECT_NAME)/$(PROJECT_NAME) /data/apps/$(PROJECT_NAME)/$(PROJECT_NAME)-old"
+	scp -r $(PROJECT_NAME) $(dev):/data/apps/$(PROJECT_NAME)/$(PROJECT_NAME)
+	ssh $(dev) -p 22 "supervisorctl restart $(PROJECT_NAME)"
+
+dev_config_only: PROJECT_NAME=gpts-dev
+dev_config_only:
+	scp -r config/config_dev.json $(dev):/data/apps/$(PROJECT_NAME)/config/config.json
+	ssh $(dev) -p 22 "supervisorctl restart $(PROJECT_NAME)"

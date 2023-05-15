@@ -3,50 +3,52 @@ package main
 import (
 	"flag"
 	"os"
-	"os/signal"
 
 	"github.com/jony4/go-template/components/version"
 	"github.com/jony4/go-template/components/xlog"
 	"github.com/jony4/go-template/config"
+	_ "github.com/jony4/go-template/migrations"
 	"github.com/jony4/go-template/service"
+	"github.com/pocketbase/pocketbase"
+	"github.com/pocketbase/pocketbase/plugins/migratecmd"
 	log "github.com/sirupsen/logrus"
 )
 
 var (
-	printVersion bool
-	configPath   string
+	configPath string
 )
 
 func main() {
-	pwd, _ := os.Getwd()
-	flag.BoolVar(&printVersion, "version", false, "print version of this build")
-	flag.StringVar(&configPath, "config", pwd+"/config/config.json", "config file path of this project")
+	var (
+		pwd, _ = os.Getwd()
+	)
+
+	flag.StringVar(&configPath, "config", pwd+"/config/config_dev.json", "configLoad file path of this project")
 	flag.Parse()
-	// print version
-	if printVersion {
-		version.PrintFullVersionInfo()
-		return
-	}
+
+	app := pocketbase.NewWithConfig(&pocketbase.Config{
+		DefaultDebug: true,
+	})
+
+	migratecmd.MustRegister(app, app.RootCmd, &migratecmd.Options{
+		Automigrate: true, // auto creates migration files when making collection changes
+	})
 
 	// config
 	cfg, err := config.LoadFromJSONFile(configPath)
 	if err != nil {
 		log.Fatal("config.LoadFromJSONFile", err)
 	}
-
 	xlog.InitLog(cfg.LogLevel)
 
 	// service
-	srv, err := service.NewService(cfg)
-	if err != nil {
+	if _, err = service.NewService(cfg, app); err != nil {
 		log.Fatal("NewService err:", err)
 	}
 
-	// waiting signal
-	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, os.Interrupt)
-	sig := <-sc
+	version.PrintFullVersionInfo()
 
-	// close all
-	log.Warnf("nebula-bizapp-engine-service system exit by received signal: %s, err: %v", sig.String(), srv.Close())
+	if err := app.Start(); err != nil {
+		log.Fatal(err)
+	}
 }

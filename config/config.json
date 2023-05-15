@@ -1,29 +1,16 @@
 {
-	"service_name": "",
+	"service_name": "go-template",
 	"debug": false,
 	"log_level": "warn",
 	"default_timeout": 1000000000,
-	"migration": {
-		"driver": "sqlite3",
-		"name": "migration",
-		"path": "/data/apps//migrations/sqlite3"
-	},
 	"db": {
 		"driver": "sqlite3",
-		"dsn": "/data/apps//.db?_journal_mode=WAL"
+		"dsn": "/data/apps/go-template/go-template.db?_journal_mode=WAL"
 	},
 	"redis": {
-		"redis_mode": "redis-server",
-		"redis_server": {
-			"address": "127.0.0.1:6379",
-			"password": ""
-		},
-		"redis_sentinel": {
-			"address": [
-				"127.0.0.1:26379"
-			],
-			"password": "",
-			"master_name": "master"
-		}
-	}
+		"address": "127.0.0.1:6379",
+		"password": ""
+	},
+	"grpc_server_endpoint": null,
+	"http_server_endpoint": null
 }

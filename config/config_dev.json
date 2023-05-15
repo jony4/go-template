@@ -1,29 +1,16 @@
 {
-	"service_name": "",
-	"debug": false,
-	"log_level": "warn",
+	"service_name": "go-template-dev",
+	"debug": true,
+	"log_level": "debug",
 	"default_timeout": 1000000000,
-	"migration": {
-		"driver": "sqlite3",
-		"name": "migration",
-		"path": "/data/apps//migrations/sqlite3"
-	},
 	"db": {
 		"driver": "sqlite3",
-		"dsn": "/data/apps//.db?_journal_mode=WAL"
+		"dsn": "/Users/niuqiang/go/src/github.com/jony4/go-template/go-template-dev.db?_journal_mode=WAL"
 	},
 	"redis": {
-		"redis_mode": "redis-server",
-		"redis_server": {
-			"address": "127.0.0.1:6379",
-			"password": ""
-		},
-		"redis_sentinel": {
-			"address": [
-				"127.0.0.1:26379"
-			],
-			"password": "",
-			"master_name": "master"
-		}
-	}
+		"address": "127.0.0.1:6379",
+		"password": ""
+	},
+	"grpc_server_endpoint": null,
+	"http_server_endpoint": null
 }

@@ -2,9 +2,13 @@ package service
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/jony4/go-template/config"
 	"github.com/jony4/go-template/storage"
+	"github.com/labstack/echo/v5"
+	"github.com/pocketbase/pocketbase"
+	"github.com/pocketbase/pocketbase/core"
 )
 
 type Service struct {
@@ -12,7 +16,7 @@ type Service struct {
 	Store  *storage.Storage
 }
 
-func NewService(cfg *config.Config) (*Service, error) {
+func NewService(cfg *config.Config, app *pocketbase.PocketBase) (*Service, error) {
 	srv := &Service{
 		Config: cfg,
 	}
@@ -23,9 +27,25 @@ func NewService(cfg *config.Config) (*Service, error) {
 	}
 	srv.Store = store
 
+	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
+
+		api := e.Router.Group("/api")
+		{
+			api.Any("/hello", srv.Hello)
+		}
+
+		return nil
+	})
+
 	return srv, nil
 }
 
 func (s *Service) Close() error {
 	return s.Store.Close()
+}
+
+func (s *Service) Hello(c echo.Context) error {
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"message": "hello world",
+	})
 }

@@ -5,7 +5,6 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/jmoiron/sqlx"
-	"github.com/jony4/go-template/components/migration"
 	"github.com/jony4/go-template/config"
 	_ "github.com/mattn/go-sqlite3"
 	log "github.com/sirupsen/logrus"
@@ -21,6 +20,11 @@ type Storage struct {
 func NewStorage(cfg *config.Config) (*Storage, error) {
 	s := &Storage{
 		cfg: cfg,
+		RedisDB: redis.NewClient(&redis.Options{
+			Addr:     cfg.Redis.Address,
+			Password: cfg.Redis.Password, // no password set
+			DB:       0,                  // use default DB
+		}),
 	}
 	switch cfg.DB.Driver {
 	case "sqlite3":
@@ -30,30 +34,8 @@ func NewStorage(cfg *config.Config) (*Storage, error) {
 			return nil, err
 		}
 		s.SQLite3 = sqlite3DB
-
-		// 迁移 sql
-		if err := migration.NewEngine(cfg.Migration.Driver).MigrationUp(cfg.Migration.Name, cfg.Migration.Path, sqlite3DB); err != nil {
-			return nil, err
-		}
 	default:
 		panic("unsupported db config driver")
-	}
-
-	switch cfg.Redis.RedisMode {
-	case "redis-server", "redis_server":
-		s.RedisDB = redis.NewClient(&redis.Options{
-			Addr:     cfg.Redis.RedisServer.Address,
-			Password: cfg.Redis.RedisServer.Password, // no password set
-			DB:       0,                              // use default DB
-		})
-	case "redis-sentinel", "redis_sentinel":
-		s.RedisDB = redis.NewFailoverClient(&redis.FailoverOptions{
-			MasterName:    cfg.Redis.RedisSentinel.MasterName,
-			Password:      cfg.Redis.RedisSentinel.Password,
-			SentinelAddrs: cfg.Redis.RedisSentinel.Address,
-		})
-	default:
-		panic("unsupported redis config mode")
 	}
 
 	if err := s.healthCheck(); err != nil {
@@ -76,11 +58,9 @@ func (s *Storage) healthCheck() error {
 		}
 	}
 
-	if s.cfg.Redis.RedisMode != "" {
-		// check redis
-		if err := s.RedisDB.Ping(ctx).Err(); err != nil {
-			return err
-		}
+	// check redis
+	if err := s.RedisDB.Ping(ctx).Err(); err != nil {
+		return err
 	}
 
 	return nil

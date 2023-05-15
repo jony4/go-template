@@ -46,3 +46,5 @@ vendor/
 # Go workspace file
 go.work
 
+*.db*
+my_project_name
