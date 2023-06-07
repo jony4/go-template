@@ -27,7 +27,8 @@ func main() {
 	flag.Parse()
 
 	app := pocketbase.NewWithConfig(&pocketbase.Config{
-		DefaultDebug: true,
+		DefaultDebug:   true,
+		DefaultDataDir: pwd + "/pb_data",
 	})
 
 	migratecmd.MustRegister(app, app.RootCmd, &migratecmd.Options{

@@ -49,3 +49,4 @@ go.work
 *.db*
 go-template-dev.*
 my_project_name
+pb_data
