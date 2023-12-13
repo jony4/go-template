@@ -52,3 +52,4 @@ my_project_name
 pb_data
 config/config_dev.json
 vendor
+/go-template
