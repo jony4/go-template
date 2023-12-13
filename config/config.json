@@ -1,0 +1,16 @@
+{
+	"service_name": "go-template",
+	"debug": false,
+	"log_level": "warn",
+	"default_timeout": 1000000000,
+	"db": {
+		"driver": "sqlite3",
+		"dsn": "/data/apps/go-template/go-template.db?_journal_mode=WAL"
+	},
+	"redis": {
+		"address": "127.0.0.1:6379",
+		"password": ""
+	},
+	"grpc_server_endpoint": null,
+	"http_server_endpoint": null
+}
