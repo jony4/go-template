@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"os"
 
 	"github.com/jony4/go-template/components/version"
@@ -14,20 +13,22 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var (
-	configPath string
-)
-
 func main() {
 	var (
-		pwd, _ = os.Getwd()
+		pwd, _     = os.Getwd()
+		configPath = os.Getenv("CONFIG_PATH")
+		dataDir    = os.Getenv("DATA_DIR")
 	)
 
-	flag.StringVar(&configPath, "config", pwd+"/config/config.json", "configLoad file path of this project")
-	flag.Parse()
+	if configPath == "" {
+		configPath = pwd + "/config/config.json"
+	}
+	if dataDir == "" {
+		dataDir = pwd + "/pb_data"
+	}
 
 	app := pocketbase.NewWithConfig(pocketbase.Config{
-		DefaultDataDir: pwd + "/pb_data",
+		DefaultDataDir: dataDir,
 	})
 
 	migratecmd.MustRegister(app, app.RootCmd, migratecmd.Config{

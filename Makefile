@@ -37,11 +37,6 @@ test: clean
 	go test -tags skip -v ./... -coverprofile .coverage.txt
 	go tool cover -func=.coverage.txt
 
-build: LDFLAGS = -s -w
-build: LDFLAGS += -X "$(PROJECT_GO)/components/version.BuildTS=$(BUILD_TS)"
-build: LDFLAGS += -X "$(PROJECT_GO)/components/version.GitHash=$(COMMIT_ID)"
-build: LDFLAGS += -X "$(PROJECT_GO)/components/version.Version=$(VERSION)"
-build: LDFLAGS += -X "$(PROJECT_GO)/components/version.GitBranch=$(CHANNEL)"
 build: clean
 	go build -gcflags '$(GCFLAGS)' -ldflags '$(LDFLAGS)' -tags "libsqlite3 darwin amd64" -o $(PROJECT_NAME)
 
@@ -58,7 +53,7 @@ dev_host=root@127.0.0.1
 
 online:
 	scp -r config/config.json $(dev_host):/data/apps/$(PROJECT_NAME)/config/config.json
-	env GOOS=linux CGO_ENABLED=1 go build -gcflags '$(GCFLAGS)' -ldflags '$(LDFLAGS)' -o $(PROJECT_NAME) && upx -1 $(PROJECT_NAME)
+	env CC=x86_64-linux-musl-gcc GOOS=linux CGO_ENABLED=1 go build -gcflags '$(GCFLAGS)' -ldflags '$(LDFLAGS)' -o $(PROJECT_NAME) && upx -1 $(PROJECT_NAME)
 	ssh $(dev_host) -p 22 "mv /data/apps/$(PROJECT_NAME)/$(PROJECT_NAME) /data/apps/$(PROJECT_NAME)/$(PROJECT_NAME)-old"
 	scp -r $(PROJECT_NAME) $(dev_host):/data/apps/$(PROJECT_NAME)/$(PROJECT_NAME)
 	ssh $(dev_host) -p 22 "supervisorctl restart $(PROJECT_NAME)"
@@ -70,7 +65,7 @@ online_config_only:
 dev: PROJECT_NAME=go-template-dev
 dev:
 	scp -r config/config_dev.json $(dev_host):/data/apps/$(PROJECT_NAME)/config/config.json
-	env GOOS=linux CGO_ENABLED=1 go build -gcflags '$(GCFLAGS)' -ldflags '$(LDFLAGS)' -o $(PROJECT_NAME) && upx -1 $(PROJECT_NAME)
+	env CC=x86_64-linux-musl-gcc GOOS=linux CGO_ENABLED=1 go build -gcflags '$(GCFLAGS)' -ldflags '$(LDFLAGS)' -o $(PROJECT_NAME) && upx -1 $(PROJECT_NAME)
 	ssh $(dev_host) -p 22 "mv /data/apps/$(PROJECT_NAME)/$(PROJECT_NAME) /data/apps/$(PROJECT_NAME)/$(PROJECT_NAME)-old"
 	scp -r $(PROJECT_NAME) $(dev_host):/data/apps/$(PROJECT_NAME)/$(PROJECT_NAME)
 	ssh $(dev_host) -p 22 "supervisorctl restart $(PROJECT_NAME)"
