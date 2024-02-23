@@ -38,7 +38,7 @@ func main() {
 	}
 	var out bytes.Buffer
 	json.Indent(&out, cfgBytes, "", "\t")
-	os.WriteFile(pwd+"/config/config.json", out.Bytes(), 0755)
+	os.WriteFile(pwd+"/config.json", out.Bytes(), 0755)
 
 	serviceName += "-dev"
 	// 开发，测试配置
@@ -62,5 +62,5 @@ func main() {
 	}
 	var debugOut bytes.Buffer
 	json.Indent(&debugOut, cfgDevBytes, "", "\t")
-	os.WriteFile(pwd+"/config/config_dev.json", debugOut.Bytes(), 0755)
+	os.WriteFile(pwd+"/config_dev.json", debugOut.Bytes(), 0755)
 }
